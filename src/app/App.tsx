@@ -8,6 +8,8 @@ declare global { interface Window { kakao: any; } }
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router";
 import { Search, User, MapPin, Navigation, TrendingDown, Home, Map, X, Check, Train } from "lucide-react";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
+import { getSubwayLineColor, getReadableTextColor } from "./lib/subwayLineColors";
+import { formatDuration } from "./lib/formatDuration";
 
 // ── 프로필 아바타 ────────────────────────────────────────────────
 const AVATAR_OPTIONS = [
@@ -627,15 +629,24 @@ function CongestionTab() {
         >
           전체
         </button>
-        {lines.map((line, idx) => (
-          <button
-            key={idx}
-            onClick={() => setSelectedLine(line)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${selectedLine === line ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}
-          >
-            {line}
-          </button>
-        ))}
+        {lines.map((line, idx) => {
+          const lineColor = getSubwayLineColor(line);
+          const isSelected = selectedLine === line;
+          return (
+            <button
+              key={idx}
+              onClick={() => setSelectedLine(line)}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors border"
+              style={
+                isSelected
+                  ? { backgroundColor: lineColor, borderColor: lineColor, color: getReadableTextColor(lineColor) }
+                  : { backgroundColor: "transparent", borderColor: lineColor, color: lineColor }
+              }
+            >
+              {line}
+            </button>
+          );
+        })}
       </div>
 
       <p className="text-xs text-gray-400">현재 시간({currentTimeLabel}, {dayType}) 기준 혼잡도입니다</p>
@@ -658,7 +669,18 @@ function CongestionTab() {
                       {congestion.label}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-500 truncate">{item["호선"]} {item["상하구분"]}</span>
+                  <span className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                    <span
+                      className="px-1.5 py-0.5 rounded text-[10px] font-semibold flex-shrink-0"
+                      style={{
+                        backgroundColor: getSubwayLineColor(item["호선"]),
+                        color: getReadableTextColor(getSubwayLineColor(item["호선"])),
+                      }}
+                    >
+                      {item["호선"]}
+                    </span>
+                    {item["상하구분"]}
+                  </span>
                 </div>
                 <div className="mt-auto pt-2">
                   <div className="w-full bg-gray-100 rounded-full h-2">
@@ -867,7 +889,7 @@ function RouteResultScreen() {
                   }`}
                 >
                   <div className="text-xs font-bold mb-1">{isAI ? "🤖 " : ""}{getRouteLabel(idx)}</div>
-                  <div className="text-sm opacity-90">{route.estimated_comfort_time_min}분</div>
+                  <div className="text-sm opacity-90">{formatDuration(route.estimated_comfort_time_min)}</div>
                 </button>
               );
             })}
@@ -884,11 +906,11 @@ function RouteResultScreen() {
 
               <div className="grid grid-cols-3 gap-4 text-center mb-4">
                 <div>
-                  <div className="text-2xl font-bold text-blue-600">{currentRoute.estimated_comfort_time_min}분</div>
+                  <div className="text-2xl font-bold text-blue-600">{formatDuration(currentRoute.estimated_comfort_time_min)}</div>
                   <div className="text-xs text-gray-500">예상 소요시간</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-700">{currentRoute.original_time_min}분</div>
+                  <div className="text-2xl font-bold text-gray-700">{formatDuration(currentRoute.original_time_min)}</div>
                   <div className="text-xs text-gray-500">기본 소요시간</div>
                 </div>
                 <div>
@@ -922,7 +944,7 @@ function RouteResultScreen() {
                             {sub.traffic_type !== 3 && sub.lane_name && (
                               <span className="font-medium text-gray-700 mr-2">[{sub.lane_name}]</span>
                             )}
-                            <span>{sub.section_time_min}분 소요</span>
+                            <span>{formatDuration(sub.section_time_min)} 소요</span>
                             {sub.station_count > 0 && <span> ({sub.station_count}개 정거장)</span>}
                           </div>
                         </div>
